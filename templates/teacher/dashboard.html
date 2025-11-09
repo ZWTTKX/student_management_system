@@ -1,0 +1,237 @@
+<!-- templates/teacher/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 教师侧边栏 -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">教师功能菜单</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('teacher.course_manage') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-book me-2"></i>课程管理
+                    </a>
+                    <a href="{{ url_for('teacher.grade_manage') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-bar me-2"></i>成绩管理
+                    </a>
+                    <a href="{{ url_for('teacher.course_manage') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-bullhorn me-2"></i>发布公告
+                    </a>
+                    <a href="{{ url_for('teacher.course_manage') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-upload me-2"></i>资料管理
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 教师快速统计 -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">我的统计</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>负责课程:</span>
+                    <strong class="text-primary">{{ courses_count }} 门</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>发布公告:</span>
+                    <strong class="text-success">{{ announcements_count }} 条</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>课程资料:</span>
+                    <strong class="text-info">{{ materials_count }} 个</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速操作 -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">快速操作</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('teacher.announcement_edit', course_id=0) }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-plus-circle me-2 text-success"></i>发布新公告
+                    </a>
+                    <a href="{{ url_for('teacher.grade_manage') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-edit me-2 text-primary"></i>录入成绩
+                    </a>
+                    <a href="{{ url_for('teacher.course_manage') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-upload me-2 text-info"></i>上传资料
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 教师主内容区 -->
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center bg-success text-white">
+                <h4 class="mb-0">{{ title }}</h4>
+                <span class="badge bg-light text-success">{{ user.role }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5>欢迎回来，{{ user.name }}老师！</h5>
+                        <p class="text-muted">今天是 {{ now.strftime('%Y年%m月%d日') }}，祝您工作愉快！</p>
+
+                        <!-- 今日提醒 -->
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>今日提醒：</strong>
+                            {% if announcements_count == 0 %}
+                                您还没有发布过公告，<a href="{{ url_for('teacher.course_manage') }}" class="alert-link">立即发布第一条公告</a>
+                            {% elif materials_count == 0 %}
+                                您还没有上传课程资料，<a href="{{ url_for('teacher.course_manage') }}" class="alert-link">立即上传资料</a>
+                            {% else %}
+                                您有 {{ courses_count }} 门课程需要管理，继续保持！
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 教师快捷功能卡片 -->
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100 border-success">
+                            <div class="card-body">
+                                <i class="fas fa-book fa-2x text-success mb-2"></i>
+                                <h6>课程管理</h6>
+                                <p class="text-muted small">管理您的课程信息</p>
+                                <a href="{{ url_for('teacher.course_manage') }}" class="btn btn-success btn-sm">进入管理</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100 border-primary">
+                            <div class="card-body">
+                                <i class="fas fa-chart-bar fa-2x text-primary mb-2"></i>
+                                <h6>成绩管理</h6>
+                                <p class="text-muted small">录入和管理学生成绩</p>
+                                <a href="{{ url_for('teacher.grade_manage') }}" class="btn btn-primary btn-sm">管理成绩</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100 border-warning">
+                            <div class="card-body">
+                                <i class="fas fa-bullhorn fa-2x text-warning mb-2"></i>
+                                <h6>发布公告</h6>
+                                <p class="text-muted small">向学生发布课程通知</p>
+                                <a href="{{ url_for('teacher.course_manage') }}" class="btn btn-warning btn-sm">发布公告</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100 border-info">
+                            <div class="card-body">
+                                <i class="fas fa-file-upload fa-2x text-info mb-2"></i>
+                                <h6>资料管理</h6>
+                                <p class="text-muted small">上传和管理课程资料</p>
+                                <a href="{{ url_for('teacher.course_manage') }}" class="btn btn-info btn-sm">管理资料</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最近活动 -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">最近活动</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if recent_activities %}
+                                <div class="list-group list-group-flush">
+                                    {% for activity in recent_activities %}
+                                    <a href="{{ activity.url }}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas {{ activity.icon }} text-{{ activity.color }} me-3 fa-lg"></i>
+                                                <div>
+                                                    <div class="fw-bold">{{ activity.title }}</div>
+                                                    <small class="text-muted">{{ activity.course_name }}</small>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">{{ activity.time.strftime('%m-%d %H:%M') }}</small>
+                                        </div>
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                    <h6 class="text-muted">暂无活动记录</h6>
+                                    <p class="text-muted small">开始发布公告或上传资料吧！</p>
+                                </div>
+                                {% endif %}
+
+                                <!-- 查看更多链接 -->
+                                {% if recent_activities %}
+                                <div class="text-center mt-3">
+                                    <a href="{{ url_for('teacher.course_manage') }}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-list me-1"></i>查看全部活动
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 待办事项 -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-warning text-white">
+                                <h6 class="mb-0">待办事项</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    {% if announcements_count == 0 %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-bullhorn text-warning me-2"></i>
+                                            <span>发布您的第一条课程公告</span>
+                                        </div>
+                                        <a href="{{ url_for('teacher.course_manage') }}" class="btn btn-warning btn-sm">去发布</a>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if materials_count == 0 %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-file-upload text-info me-2"></i>
+                                            <span>上传课程资料</span>
+                                        </div>
+                                        <a href="{{ url_for('teacher.course_manage') }}" class="btn btn-info btn-sm">去上传</a>
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-chart-bar text-primary me-2"></i>
+                                            <span>检查成绩录入情况</span>
+                                        </div>
+                                        <a href="{{ url_for('teacher.grade_manage') }}" class="btn btn-primary btn-sm">去检查</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

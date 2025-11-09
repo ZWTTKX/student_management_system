@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}欢迎 - 学工管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <div class="jumbotron bg-light p-5 rounded-3">
+            <h1 class="display-4 mb-4">学工管理系统</h1>
+            <p class="lead">欢迎使用学生工作综合管理平台</p>
+            <hr class="my-4">
+
+            {% if not current_user.is_authenticated %}
+            <p class="mb-4">请登录以使用系统功能</p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <a class="btn btn-primary btn-lg px-4" href="{{ url_for('auth.login') }}">
+                    用户登录
+                </a>
+            </div>
+            {% else %}
+            <p class="mb-4">欢迎回来，{{ current_user.real_name }}！</p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                {% if current_user.is_student() %}
+                <a class="btn btn-primary btn-lg px-4" href="{{ url_for('student.dashboard') }}">
+                    进入学生主页
+                </a>
+                {% elif current_user.is_teacher() %}
+                <a class="btn btn-primary btn-lg px-4" href="{{ url_for('teacher.dashboard') }}">
+                    进入教师主页
+                </a>
+                {% elif current_user.is_counselor() %}
+                <a class="btn btn-primary btn-lg px-4" href="{{ url_for('counselor.dashboard') }}">
+                    进入辅导员主页
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 系统功能简介 -->
+        <div class="row mt-5">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">课程管理</h5>
+                        <p class="card-text">查看课表、选课退课、课程资料下载</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">成绩管理</h5>
+                        <p class="card-text">成绩查询、成绩分析、学业预警</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">请假管理</h5>
+                        <p class="card-text">在线请假、审批流程、请假记录</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

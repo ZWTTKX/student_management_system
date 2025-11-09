@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}登录 - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center">
+                <h4 class="mb-0">学工管理系统</h4>
+                <small>用户登录</small>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="username" name="username"
+                               required autofocus>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">密码</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               required>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember_me" name="remember_me">
+                        <label class="form-check-label" for="remember_me">记住我</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">登录</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 测试账号信息 -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="card-title">测试账号</h6>
+                <div class="small">
+                    <div><strong>学生:</strong> stu001 / password123</div>
+                    <div><strong>教师:</strong> tea001 / password123</div>
+                    <div><strong>辅导员:</strong> coun001 / password123</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+<!-- templates/student/course_announcements.html -->
+{% extends "base.html" %}
+
+{% block title %}课程公告 - 学生系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 主内容区 - 全宽显示 -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">课程公告</h4>
+                <div>
+                    <a href="{{ url_for('student.course_announcements', show_all='true') }}"
+                       class="btn btn-light btn-sm me-2">
+                        <i class="fas fa-list"></i> 查看全部
+                    </a>
+                    <a href="{{ url_for('student.course_announcements') }}"
+                       class="btn btn-light btn-sm">
+                        <i class="fas fa-sync"></i> 刷新
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- 筛选表单 -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <form method="get" class="row g-2">
+                            <div class="col-md-6">
+                                <select name="course_id" class="form-select" onchange="this.form.submit()">
+                                    <option value="">所有课程</option>
+                                    {% for sc in selected_courses %}
+                                    <option value="{{ sc.course.id }}"
+                                            {% if course_id == sc.course.id %}selected{% endif %}>
+                                        {{ sc.course.course_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select name="show_all" class="form-select" onchange="this.form.submit()">
+                                    <option value="false" {% if not show_all %}selected{% endif %}>最近30天</option>
+                                    <option value="true" {% if show_all %}selected{% endif %}>全部公告</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span class="text-muted">共 {{ announcements|length }} 条公告</span>
+                    </div>
+                </div>
+
+                <!-- 公告列表 -->
+                {% if announcements %}
+                <div class="list-group">
+                    {% for announcement in announcements %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">
+                                <i class="fas fa-bullhorn text-primary me-2"></i>
+                                {{ announcement.title }}
+                            </h5>
+                            <small class="text-muted">{{ announcement.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        <p class="mb-1 text-muted">
+                            <i class="fas fa-book me-1"></i>{{ announcement.course.course_name }}
+                            <i class="fas fa-user me-1 ms-2"></i>{{ announcement.teacher.real_name }}
+                        </p>
+                        <p class="mb-2">
+                            {{ announcement.content[:200] }}{% if announcement.content|length > 200 %}...{% endif %}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                {% if announcement.attachment_path %}
+                                <i class="fas fa-paperclip me-1"></i>有附件
+                                {% endif %}
+                            </small>
+                            <a href="{{ url_for('student.announcement_detail', announcement_id=announcement.id) }}"
+                               class="btn btn-primary btn-sm">查看详情</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">暂无公告</h5>
+                    <p class="text-muted">您还没有收到任何课程公告</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

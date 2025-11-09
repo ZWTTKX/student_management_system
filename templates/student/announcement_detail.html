@@ -1,0 +1,82 @@
+<!-- templates/student/announcement_detail.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ announcement.title }} - 公告详情{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">公告详情</h4>
+                <a href="{{ url_for('student.course_announcements') }}" class="btn btn-light btn-sm">
+                    <i class="fas fa-arrow-left"></i> 返回公告列表
+                </a>
+            </div>
+            <div class="card-body">
+                <!-- 公告头部信息 -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <h3 class="text-primary">{{ announcement.title }}</h3>
+                        <div class="text-muted mb-3">
+                            <i class="fas fa-book me-1"></i>
+                            {{ announcement.course.course_name if announcement.course else '未知课程' }}
+                            ({{ announcement.course.course_code if announcement.course else '' }})
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="text-muted">
+                            <small>
+                                <i class="fas fa-user me-1"></i>
+                                {{ announcement.teacher.real_name if announcement.teacher else '未知教师' }}
+                            </small>
+                            <br>
+                            <small>
+                                <i class="fas fa-clock me-1"></i>
+                                {{ announcement.created_at.strftime('%Y年%m月%d日 %H:%M') }}
+                            </small>
+                            {% if announcement.is_pinned %}
+                            <br>
+                            <span class="badge bg-warning">
+                                <i class="fas fa-thumbtack"></i> 置顶
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 公告内容 - 直接显示静态HTML -->
+                <div class="announcement-content border-top pt-4">
+                    {{ announcement.content|safe }}
+                </div>
+
+                <!-- 返回按钮 -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <a href="{{ url_for('student.course_announcements') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> 返回公告列表
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.announcement-content {
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+.announcement-content p {
+    margin-bottom: 1rem;
+}
+
+.announcement-content .alert {
+    margin: 1rem 0;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,258 @@
+<!-- templates/teacher/grade_manage.html -->
+{% extends "base.html" %}
+
+{% block title %}成绩管理 - 学工管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">成绩管理</h4>
+            </div>
+            <div class="card-body">
+                {% if courses %}
+                <div class="row">
+                    {% for course in courses %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ course.course_name }}</h5>
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        课程代码: {{ course.course_code }}<br>
+                                        学分: {{ course.credit }}<br>
+                                        班级: {{ course.class_info.class_name if course.class_info else '未知' }}<br>
+                                        选课人数: {{ course.enrollment_count if course.enrollment_count else 0 }}
+                                    </small>
+                                </p>
+
+                                <!-- 状态显示 -->
+                                {% if course.grades_submitted %}
+                                <div class="alert alert-success alert-sm mb-0 py-1">
+                                    <i class="fas fa-check-circle"></i> 成绩已提交
+                                    {% if course.grades_submitted_at %}
+                                    <br>
+                                    <small>提交时间: {{ course.grades_submitted_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                    {% endif %}
+                                </div>
+                                {% elif course.grades_saved %}
+                                <div class="alert alert-info alert-sm mb-0 py-1">
+                                    <i class="fas fa-save"></i> 成绩已保存（待提交）
+                                </div>
+                                {% else %}
+                                <div class="alert alert-warning alert-sm mb-0 py-1">
+                                    <i class="fas fa-exclamation-circle"></i> 成绩未保存
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer">
+                                <a href="{{ url_for('teacher.course_grades', course_id=course.id) }}"
+                                   class="btn {% if course.grades_submitted %}btn-outline-secondary{% elif course.grades_saved %}btn-warning{% else %}btn-primary{% endif %} btn-sm course-grade-btn"
+                                   data-course-id="{{ course.id }}"
+                                   data-grades-saved="{{ 'true' if course.grades_saved else 'false' }}">
+                                    <i class="fas fa-edit"></i>
+                                    {% if course.grades_submitted %}查看成绩{% elif course.grades_saved %}修改成绩{% else %}管理成绩{% endif %}
+                                </a>
+
+                                <!-- 只有成绩已保存但未提交的课程才显示提交按钮 -->
+                                {% if course.grades_saved and not course.grades_submitted %}
+                                <button class="btn btn-success btn-sm mt-1 submit-grade-btn"
+                                        data-course-id="{{ course.id }}"
+                                        data-course-name="{{ course.course_name }}"
+                                        data-course-code="{{ course.course_code }}">
+                                    <i class="fas fa-paper-plane"></i> 提交成绩
+                                </button>
+                                {% endif %}
+
+                                <!-- 只有成绩已保存的课程才显示重置按钮 -->
+                                {% if course.grades_saved and not course.grades_submitted %}
+                                <button class="btn btn-outline-secondary btn-sm mt-1 reset-grade-btn"
+                                        data-course-id="{{ course.id }}">
+                                    <i class="fas fa-redo"></i> 重置状态
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">暂无课程</h5>
+                    <p class="text-muted">您当前没有需要管理成绩的课程</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 提交确认Modal -->
+<div class="modal fade" id="submitConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认提交成绩</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>确定要提交 <strong id="submitCourseName"></strong> 的成绩吗？</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>重要提示：</strong><br>
+                    • 提交后将锁定所有成绩，无法再修改<br>
+                    • 系统将自动向学生发布成绩公告<br>
+                    • 此操作不可撤销
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success" id="confirmSubmitBtn">确认提交</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentCourseId = null;
+    let currentCourseName = null;
+
+    // 监听提交按钮点击
+    document.querySelectorAll('.submit-grade-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            currentCourseId = this.getAttribute('data-course-id');
+            currentCourseName = this.getAttribute('data-course-name');
+            const courseCode = this.getAttribute('data-course-code');
+
+            document.getElementById('submitCourseName').textContent =
+                `${currentCourseName} (${courseCode})`;
+
+            // 显示确认模态框
+            const modal = new bootstrap.Modal(document.getElementById('submitConfirmModal'));
+            modal.show();
+        });
+    });
+
+    // 确认提交按钮
+    document.getElementById('confirmSubmitBtn').addEventListener('click', function() {
+        submitGrades(currentCourseId);
+    });
+
+    // 提交成绩函数
+    function submitGrades(courseId) {
+        const submitBtn = document.querySelector(`.submit-grade-btn[data-course-id="${courseId}"]`);
+        const originalText = submitBtn ? submitBtn.innerHTML : '';
+
+        // 显示加载状态
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 提交中...';
+            submitBtn.disabled = true;
+        }
+
+        // 关闭模态框
+        bootstrap.Modal.getInstance(document.getElementById('submitConfirmModal')).hide();
+
+        fetch(`/teacher/course/${courseId}/grades/submit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccessMessage('成绩提交成功！已发布成绩公告通知学生。');
+
+                // 延迟刷新页面，让用户看到成功消息
+                setTimeout(() => {
+                    location.reload(); // 刷新页面更新状态
+                }, 1500);
+            } else {
+                alert('提交失败: ' + data.message);
+                // 恢复按钮状态
+                if (submitBtn) {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('提交失败，请重试');
+            // 恢复按钮状态
+            if (submitBtn) {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    // 监听重置按钮点击
+    document.querySelectorAll('.reset-grade-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const courseId = this.getAttribute('data-course-id');
+            resetGradeStatus(courseId);
+        });
+    });
+
+    // 重置成绩状态函数
+    function resetGradeStatus(courseId) {
+        if (!confirm('确定要重置成绩状态吗？这将允许重新编辑成绩。')) {
+            return;
+        }
+
+        fetch(`/teacher/course/${courseId}/grades/reset`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // 刷新页面更新状态
+            } else {
+                alert('重置失败: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('重置失败，请重试');
+        });
+    }
+
+    // 检查URL参数，如果有保存成功的标志，显示提示
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('saved') === 'true') {
+        showSuccessMessage('成绩保存成功！');
+    }
+    if (urlParams.get('submitted') === 'true') {
+        showSuccessMessage('成绩提交成功！已发布成绩公告。');
+    }
+
+    function showSuccessMessage(message) {
+        // 创建提示框
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+        alertDiv.innerHTML = `
+            <i class="fas fa-check-circle"></i> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+
+        // 3秒后自动消失
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 3000);
+    }
+});
+</script>
+{% endblock %}

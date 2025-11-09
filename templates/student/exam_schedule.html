@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}考试安排 - 学工管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">考试安排</h4>
+            </div>
+            <div class="card-body">
+                <!-- 筛选表单 -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <form method="GET" class="row g-2">
+                            <div class="col-md-5">
+                                <input type="text" name="course_name" class="form-control" 
+                                       placeholder="按课程名称筛选" value="{{ course_name }}">
+                            </div>
+                            <div class="col-md-5">
+                                <input type="date" name="exam_date" class="form-control" 
+                                       value="{{ exam_date }}">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">筛选</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <a href="{{ url_for('student.schedule') }}" class="btn btn-outline-secondary">
+                            查看课表
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 考试列表 -->
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>考试科目</th>
+                                <th>考试名称</th>
+                                <th>考试时间</th>
+                                <th>考试地点</th>
+                                <th>座位号</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for exam in exams %}
+                            <tr>
+                                <td>
+                                    <strong>{{ exam.course.course_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ exam.course.course_code }}</small>
+                                </td>
+                                <td>{{ exam.exam_name }}</td>
+                                <td>
+                                    {{ exam.exam_time.strftime('%Y年%m月%d日 %H:%M') }}
+                                    {% if exam.duration %}
+                                    <br>
+                                    <small class="text-muted">时长: {{ exam.duration }}分钟</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ exam.location }}</td>
+                                <td>
+                                    {% if exam.seat_number %}
+                                    <span class="badge bg-primary">{{ exam.seat_number }}</span>
+                                    {% else %}
+                                    <span class="text-muted">未分配</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('student.calendar_sync', exam_id=exam.id) }}"
+                                       class="btn btn-outline-success btn-sm" 
+                                       title="添加到日历">
+                                        <i class="fas fa-calendar-plus"></i> 日历同步
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    暂无考试安排
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 考试统计 -->
+                {% if exams %}
+                <div class="mt-3 p-3 bg-light rounded">
+                    <small class="text-muted">
+                        共找到 <strong>{{ exams|length }}</strong> 场考试
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

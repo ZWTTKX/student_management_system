@@ -1,0 +1,181 @@
+<!-- templates/counselor/academic_alert.html -->
+{% extends "base.html" %}
+
+{% block title %}学业预警 - 学工管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">学业预警管理</h4>
+                <div>
+                    <a href="{{ url_for('counselor.generate_alerts') }}" class="btn btn-warning btn-sm me-2">
+                        <i class="fas fa-sync-alt"></i> 生成预警
+                    </a>
+                    <a href="{{ url_for('counselor.export_alerts') }}?alert_level={{ alert_level }}&class_id={{ class_id }}"
+                       class="btn btn-success btn-sm">
+                        <i class="fas fa-download"></i> 导出Excel
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- 筛选表单 -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form method="GET" class="row g-2">
+                            <div class="col-md-3">
+                                <label for="alert_level" class="form-label">预警等级</label>
+                                <select class="form-select" id="alert_level" name="alert_level">
+                                    <option value="">全部等级</option>
+                                    <option value="一级" {% if alert_level == '一级' %}selected{% endif %}>一级预警</option>
+                                    <option value="二级" {% if alert_level == '二级' %}selected{% endif %}>二级预警</option>
+                                    <option value="三级" {% if alert_level == '三级' %}selected{% endif %}>三级预警</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="class_id" class="form-label">班级</label>
+                                <select class="form-select" id="class_id" name="class_id">
+                                    <option value="">全部班级</option>
+                                    {% for class in classes %}
+                                    <option value="{{ class.id }}" {% if class_id == class.id|string %}selected{% endif %}>
+                                        {{ class.class_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="status" class="form-label">状态</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="active" {% if status == 'active' %}selected{% endif %}>活跃</option>
+                                    <option value="resolved" {% if status == 'resolved' %}selected{% endif %}>已处理</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">筛选</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 预警列表 -->
+                {% if alerts %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>学生信息</th>
+                                <th>预警等级</th>
+                                <th>挂科情况</th>
+                                <th>预警原因</th>
+                                <th>学期</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alert in alerts %}
+                            <tr>
+                                <td>
+                                    <strong>{{ alert.student.real_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">学号: {{ alert.student.username }}</small>
+                                    <br>
+                                    <small class="text-muted">班级: {{ alert.student.class_info.class_name }}</small>
+                                </td>
+                                <td>
+                                    {% if alert.alert_level == '一级' %}
+                                    <span class="badge bg-danger">一级预警</span>
+                                    {% elif alert.alert_level == '二级' %}
+                                    <span class="badge bg-warning">二级预警</span>
+                                    {% else %}
+                                    <span class="badge bg-info">三级预警</span>
+                                    {% endif %}
+                                    <br>
+                                    <small class="text-muted">挂科: {{ alert.total_failed }}门</small>
+                                </td>
+                                <td>
+                                    {% for course in alert.parsed_courses %}
+                                    <span class="badge bg-danger me-1 mb-1">{{ course }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <span title="{{ alert.reason }}">
+                                        {{ alert.reason[:30] }}{% if alert.reason|length > 30 %}...{% endif %}
+                                    </span>
+                                </td>
+                                <td>{{ alert.semester }}</td>
+                                <td>
+                                    {% if alert.status == 'active' %}
+                                    <span class="badge bg-warning">活跃</span>
+                                    {% else %}
+                                    <span class="badge bg-success">已处理</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a href="{{ url_for('counselor.alert_detail', alert_id=alert.id) }}"
+                                            class="btn btn-primary btn-sm" title="查看详情">
+                                            <i class="fas fa-eye me-1"></i>详情
+                                        </a>
+                                        {% if alert.status == 'active' %}
+                                        <a href="{{ url_for('counselor.alert_detail', alert_id=alert.id) }}#addRecordModal"
+                                        class="btn btn-warning btn-sm" title="添加辅导记录">
+                                            <i class="fas fa-comment-medical me-1"></i>辅导
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 统计信息 -->
+                <div class="mt-3 p-3 bg-light rounded">
+                    <small class="text-muted">
+                        共找到 <strong>{{ alerts|length }}</strong> 条预警记录
+                        {% if alert_level %} | 等级: {{ alert_level }}{% endif %}
+                        {% if class_id %} | 班级: {{ classes|selectattr("id", "equalto", class_id|int)|first.class_name }}{% endif %}
+                    </small>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="text-muted mb-3">
+                        <i class="fas fa-exclamation-triangle fa-3x"></i>
+                    </div>
+                    <h5>暂无预警记录</h5>
+                    <p class="text-muted">当前没有找到符合条件的学业预警记录</p>
+                    <a href="{{ url_for('counselor.generate_alerts') }}" class="btn btn-warning">生成预警数据</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 添加从JSON解析的过滤器
+function fromJson(value) {
+    try {
+        return JSON.parse(value);
+    } catch (e) {
+        return [value];
+    }
+}
+
+// 注册过滤器
+if (typeof filters === 'undefined') {
+    var filters = {};
+}
+filters.from_json = fromJson;
+
+// 在模板中使用
+document.addEventListener('DOMContentLoaded', function() {
+    // 这里可以添加页面加载后的JavaScript逻辑
+});
+</script>
+{% endblock %}

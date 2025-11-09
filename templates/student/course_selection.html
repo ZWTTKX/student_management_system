@@ -1,0 +1,183 @@
+<!-- templates/student/course_selection.html -->
+{% extends "base.html" %}
+
+{% block title %}课程选课{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- 可选课程 -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">可选课程</h5>
+                </div>
+                <div class="card-body">
+                    {% if available_courses %}
+                    <div class="row">
+                        {% for course in available_courses %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ course.course_name }}</h6>
+                                    <p class="card-text small">
+                                        <strong>课程代码:</strong> {{ course.course_code }}<br>
+                                        <strong>授课教师:</strong> {{ course.teacher.real_name }}<br>
+                                        <strong>学分:</strong> {{ course.credit }}<br>
+                                        <strong>上课时间:</strong>
+                                        {% for schedule in course.schedules %}
+                                            {{ ['周一','周二','周三','周四','周五','周六','周日'][schedule.day_of_week-1] }}
+                                            {{ schedule.start_time.strftime('%H:%M') }}-{{ schedule.end_time.strftime('%H:%M') }}<br>
+                                        {% endfor %}
+                                    </p>
+                                </div>
+                                <div class="card-footer">
+                                    <button class="btn btn-primary btn-sm select-course-btn"
+                                            data-course-id="{{ course.id }}">
+                                        选择课程
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">暂无可选课程</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- 已选课程 -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">已选课程</h5>
+                </div>
+                <div class="card-body">
+                    {% if selected_courses %}
+                    <div class="list-group">
+                        {% for selected in selected_courses %}
+                        <div class="list-group-item">
+                            <h6 class="mb-1">{{ selected.course.course_name }}</h6>
+                            <p class="mb-1 small text-muted">
+                                教师: {{ selected.course.teacher.real_name }}<br>
+                                学分: {{ selected.course.credit }}
+                            </p>
+                            <button class="btn btn-danger btn-sm drop-course-btn"
+                                    data-course-id="{{ selected.course.id }}">
+                                退选
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">暂未选择任何课程</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 选课统计 -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">选课统计</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>已选课程:</span>
+                        <strong>{{ selected_courses|length }} 门</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>总学分:</span>
+                        <strong>{{ selected_courses|sum(attribute='course.credit') }} 分</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 检查jQuery是否加载
+console.log('jQuery状态:', typeof $ !== 'undefined' ? '已加载' : '未加载');
+console.log('jQuery版本:', $?.fn?.jquery || '未知');
+
+$(document).ready(function() {
+    console.log('=== 选课页面加载完成 ===');
+    console.log('选课按钮数量:', $('.select-course-btn').length);
+    console.log('退课按钮数量:', $('.drop-course-btn').length);
+
+    // 选课操作 - 使用事件委托确保动态内容也能绑定
+    $(document).on('click', '.select-course-btn', function() {
+        const courseId = $(this).data('course-id');
+        const btn = $(this);
+
+        console.log('=== 选课按钮点击 ===');
+        console.log('课程ID:', courseId);
+        console.log('按钮元素:', btn);
+
+        // 禁用按钮防止重复点击
+        btn.prop('disabled', true).text('选课中...');
+
+        // 发送选课请求
+        $.ajax({
+            url: `/student/select-course/${courseId}`,
+            method: 'POST',
+            dataType: 'json',
+            success: function(response) {
+                console.log('选课响应:', response);
+                if (response.success) {
+                    alert('选课成功！');
+                    location.reload();
+                } else {
+                    alert('选课失败: ' + response.message);
+                    btn.prop('disabled', false).text('选择课程');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('选课请求失败:', error);
+                console.error('状态:', status);
+                console.error('XHR:', xhr);
+                alert('选课请求失败，请检查控制台详情');
+                btn.prop('disabled', false).text('选择课程');
+            }
+        });
+    });
+
+    // 退课操作
+    $(document).on('click', '.drop-course-btn', function() {
+        const courseId = $(this).data('course-id');
+        const btn = $(this);
+
+        console.log('退课按钮点击，课程ID:', courseId);
+
+        if (confirm('确定要退选该课程吗？')) {
+            btn.prop('disabled', true).text('退课中...');
+
+            $.ajax({
+                url: `/student/drop-course/${courseId}`,
+                method: 'POST',
+                dataType: 'json',
+                success: function(response) {
+                    console.log('退课响应:', response);
+                    if (response.success) {
+                        alert('退课成功！');
+                        location.reload();
+                    } else {
+                        alert('退课失败: ' + response.message);
+                        btn.prop('disabled', false).text('退选');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('退课请求失败:', error);
+                    alert('退课请求失败');
+                    btn.prop('disabled', false).text('退选');
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

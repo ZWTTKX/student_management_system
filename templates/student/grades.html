@@ -1,0 +1,105 @@
+<!-- templates/student/grades.html -->
+{% extends "base.html" %}
+
+{% block title %}成绩查询{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">成绩查询</h4>
+                </div>
+                <div class="card-body">
+                    <!-- 成绩统计 -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-center bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary">{{ course_count }}</h5>
+                                    <p class="card-text">已修课程</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title text-success">{{ total_credits }}</h5>
+                                    <p class="card-text">总学分</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title text-info">{{ average_gpa }}</h5>
+                                    <p class="card-text">平均绩点</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title text-warning">{{ (average_gpa * 25)|round(1) }}</h5>
+                                    <p class="card-text">平均成绩</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 成绩列表 -->
+                    {% if grades %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>课程名称</th>
+                                    <th>课程代码</th>
+                                    <th>授课教师</th>
+                                    <th>学分</th>
+                                    <th>成绩</th>
+                                    <th>绩点</th>
+                                    <th>等级</th>
+                                    <th>考试类型</th>
+                                    <th>考试日期</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grade in grades %}
+                                <tr>
+                                    <td>{{ grade.course.course_name if grade.course else 'N/A' }}</td>
+                                    <td>{{ grade.course.course_code if grade.course else 'N/A' }}</td>
+                                    <td>{{ grade.teacher.real_name if grade.teacher else 'N/A' }}</td>
+                                    <td>{{ grade.course.credit if grade.course else 0 }}</td>
+                                    <td>
+                                        <span class="badge {% if grade.score >= 90 %}bg-success{% elif grade.score >= 80 %}bg-info{% elif grade.score >= 70 %}bg-warning{% elif grade.score >= 60 %}bg-primary{% else %}bg-danger{% endif %}">
+                                            {{ grade.score or '未录入' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ grade.grade_point or 'N/A' }}</td>
+                                    <td>
+                                        <span class="badge {% if grade.grade_level == 'A' %}bg-success{% elif grade.grade_level == 'B' %}bg-info{% elif grade.grade_level == 'C' %}bg-warning{% elif grade.grade_level == 'D' %}bg-primary{% else %}bg-danger{% endif %}">
+                                            {{ grade.grade_level or 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ grade.exam_type }}</td>
+                                    <td>{{ grade.exam_date.strftime('%Y-%m-%d') if grade.exam_date else 'N/A' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">暂无成绩记录</h5>
+                        <p class="text-muted">您还没有任何课程成绩记录</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,242 @@
+<!-- templates/student/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 学生侧边栏 -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">学生功能菜单</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('student.course_selection') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-plus-circle me-2"></i>课程选课
+                    </a>
+                    <a href="{{ url_for('student.grades') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-bar me-2"></i>成绩查询
+                    </a>
+                    <a href="{{ url_for('student.schedule') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-calendar-alt me-2"></i>我的课表
+                    </a>
+                    <a href="{{ url_for('student.my_courses') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-book me-2"></i>我的课程
+                    </a>
+                    <a href="{{ url_for('student.leave_apply') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-calendar-minus me-2"></i>请假申请
+                    </a>
+                    <a href="{{ url_for('student.leave_records') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-history me-2"></i>请假记录
+                    </a>
+                    <a href="{{ url_for('student.classroom_booking') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-door-open me-2"></i>教室借用
+                    </a>
+                    <a href="{{ url_for('student.booking_records') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-list-alt me-2"></i>借用记录
+                    </a>
+                    <a href="{{ url_for('student.exam_schedule') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-alt me-2"></i>考试安排
+                    </a>
+                    <a href="{{ url_for('student.course_announcements') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-bullhorn me-2"></i>课程公告
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学生快速统计 -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">我的统计</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>已选课程:</span>
+                    <strong class="text-primary">{{ selected_courses_count }} 门</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>待审批请假:</span>
+                    <strong class="text-warning">{{ pending_leaves_count }} 条</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>教室借用:</span>
+                    <strong class="text-info">{{ active_bookings_count }} 个</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>近期考试:</span>
+                    <strong class="text-danger">{{ upcoming_exams_count }} 场</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 学生主内容区 -->
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+                <h4 class="mb-0">{{ title }}</h4>
+                <span class="badge bg-light text-primary">{{ user.role }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5>欢迎回来，{{ user.name }}同学！</h5>
+                        <p class="text-muted">今天是 {{ now.strftime('%Y年%m月%d日') }}，祝您学习愉快！</p>
+                    </div>
+                </div>
+
+                <!-- 学生快捷功能卡片 -->
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100 border-primary">
+                            <div class="card-body">
+                                <i class="fas fa-plus-circle fa-2x text-primary mb-2"></i>
+                                <h6>课程选课</h6>
+                                <p class="text-muted small">选择本学期课程</p>
+                                <a href="{{ url_for('student.course_selection') }}" class="btn btn-primary btn-sm">开始选课</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100 border-success">
+                            <div class="card-body">
+                                <i class="fas fa-calendar-minus fa-2x text-success mb-2"></i>
+                                <h6>请假申请</h6>
+                                <p class="text-muted small">提交请假申请</p>
+                                <a href="{{ url_for('student.leave_apply') }}" class="btn btn-success btn-sm">申请请假</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100 border-info">
+                            <div class="card-body">
+                                <i class="fas fa-door-open fa-2x text-info mb-2"></i>
+                                <h6>教室借用</h6>
+                                <p class="text-muted small">申请使用教室</p>
+                                <a href="{{ url_for('student.classroom_booking') }}" class="btn btn-info btn-sm">借用教室</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100 border-warning">
+                            <div class="card-body">
+                                <i class="fas fa-file-alt fa-2x text-warning mb-2"></i>
+                                <h6>考试安排</h6>
+                                <p class="text-muted small">查看考试信息</p>
+                                <a href="{{ url_for('student.exam_schedule') }}" class="btn btn-warning btn-sm">查看安排</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card text-center h-100 border-secondary">
+                            <div class="card-body">
+                                <i class="fas fa-bullhorn fa-2x text-secondary mb-2"></i>
+                                <h6>课程公告</h6>
+                                <p class="text-muted small">查看最新通知</p>
+                                <a href="{{ url_for('student.course_announcements') }}" class="btn btn-secondary btn-sm">查看公告</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 待办事项和最近活动 -->
+                <div class="row">
+                    <!-- 待办事项 -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-warning text-white">
+                                <h6 class="mb-0">待办事项</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    {% if pending_leaves_count > 0 %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-clock text-warning me-2"></i>
+                                            <span>有待审批的请假申请</span>
+                                        </div>
+                                        <a href="{{ url_for('student.leave_records') }}" class="btn btn-warning btn-sm">查看</a>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if upcoming_exams_count > 0 %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                                            <span>有近期考试安排</span>
+                                        </div>
+                                        <a href="{{ url_for('student.exam_schedule') }}" class="btn btn-danger btn-sm">查看</a>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if selected_courses_count == 0 %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-info-circle text-primary me-2"></i>
+                                            <span>请尽快完成选课</span>
+                                        </div>
+                                        <a href="{{ url_for('student.course_selection') }}" class="btn btn-primary btn-sm">去选课</a>
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-calendar-check text-success me-2"></i>
+                                            <span>查看本周课表</span>
+                                        </div>
+                                        <a href="{{ url_for('student.schedule') }}" class="btn btn-success btn-sm">查看课表</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 最近活动 -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">最近活动</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-bullhorn text-success me-2"></i>
+                                            <span>选课系统已开放</span>
+                                        </div>
+                                        <small class="text-muted">2小时前</small>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                            <span>选课截止日期：12月31日</span>
+                                        </div>
+                                        <small class="text-muted">昨天</small>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-book text-primary me-2"></i>
+                                            <span>新增课程《人工智能导论》</span>
+                                        </div>
+                                        <small class="text-muted">3天前</small>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-door-open text-info me-2"></i>
+                                            <span>教室借用规则更新</span>
+                                        </div>
+                                        <small class="text-muted">1周前</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

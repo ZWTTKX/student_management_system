@@ -1,0 +1,140 @@
+<!-- templates/counselor/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 辅导员侧边栏 -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">辅导员功能菜单</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('counselor.academic_alerts') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-exclamation-triangle me-2"></i>学业预警
+                    </a>
+                    <a href="{{ url_for('counselor.academic_alerts') }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-clipboard-list me-2"></i>辅导记录
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 预警统计 -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">预警统计</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>总预警数:</span>
+                    <strong class="text-primary">{{ total_alerts }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>活跃预警:</span>
+                    <strong class="text-warning">{{ active_alerts }}</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>负责班级:</span>
+                    <strong class="text-success">{{ classes|length }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 辅导员主内容区 -->
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center bg-warning text-white">
+                <h4 class="mb-0">{{ title }}</h4>
+                <span class="badge bg-light text-warning">{{ user.role }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5>欢迎回来，{{ user.name }}辅导员！</h5>
+                        <p class="text-muted">今天是 {{ now.strftime('%Y年%m月%d日') }}，祝您工作顺利！</p>
+                    </div>
+                </div>
+
+                <!-- 辅导员快捷功能卡片 -->
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="card text-center h-100 border-warning">
+                            <div class="card-body">
+                                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                                <h6>学业预警管理</h6>
+                                <p class="text-muted small">查看和处理学生学业预警</p>
+                                <a href="{{ url_for('counselor.academic_alerts') }}" class="btn btn-warning btn-sm">进入管理</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card text-center h-100 border-info">
+                            <div class="card-body">
+                                <i class="fas fa-clipboard-list fa-3x text-info mb-3"></i>
+                                <h6>辅导记录</h6>
+                                <p class="text-muted small">记录学生辅导情况</p>
+                                <a href="{{ url_for('counselor.academic_alerts') }}" class="btn btn-info btn-sm">查看记录</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 负责班级信息 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">负责班级</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if classes %}
+                                <div class="row">
+                                    {% for class in classes %}
+                                    <div class="col-md-6 mb-2">
+                                        <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                                            <span>{{ class.class_name }}</span>
+                                            <span class="badge bg-primary">
+                                                {{ class.students|length }}名学生
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <p class="text-muted mb-0">暂无负责班级</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快速操作 -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">快速操作</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2 d-md-flex">
+                                    <a href="{{ url_for('counselor.generate_alerts') }}" class="btn btn-outline-warning me-2">
+                                        <i class="fas fa-sync-alt me-1"></i>生成预警
+                                    </a>
+                                    <a href="{{ url_for('counselor.export_alerts') }}" class="btn btn-outline-success">
+                                        <i class="fas fa-download me-1"></i>导出预警
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,213 @@
+<!-- templates/counselor/alert_detail.html -->
+{% extends "base.html" %}
+
+{% block title %}预警详情 - 学工管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">预警详情</h4>
+                <a href="{{ url_for('counselor.academic_alerts') }}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> 返回列表
+                </a>
+            </div>
+            <div class="card-body">
+                <!-- 学生基本信息 -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>学生信息</h5>
+                        <dl class="row">
+                            <dt class="col-sm-4">姓名:</dt>
+                            <dd class="col-sm-8">{{ alert.student.real_name }}</dd>
+
+                            <dt class="col-sm-4">学号:</dt>
+                            <dd class="col-sm-8">{{ alert.student.username }}</dd>
+
+                            <dt class="col-sm-4">班级:</dt>
+                            <dd class="col-sm-8">{{ alert.student.class_info.class_name }}</dd>
+
+                            <dt class="col-sm-4">联系方式:</dt>
+                            <dd class="col-sm-8">{{ alert.student.email }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>预警信息</h5>
+                        <dl class="row">
+                            <dt class="col-sm-4">预警等级:</dt>
+                            <dd class="col-sm-8">
+                                {% if alert.alert_level == '一级' %}
+                                <span class="badge bg-danger">一级预警</span>
+                                {% elif alert.alert_level == '二级' %}
+                                <span class="badge bg-warning">二级预警</span>
+                                {% else %}
+                                <span class="badge bg-info">三级预警</span>
+                                {% endif %}
+                            </dd>
+
+                            <dt class="col-sm-4">挂科数量:</dt>
+                            <dd class="col-sm-8">{{ alert.total_failed }}门</dd>
+
+                            <dt class="col-sm-4">学期:</dt>
+                            <dd class="col-sm-8">{{ alert.semester }}</dd>
+
+                            <dt class="col-sm-4">当前状态:</dt>
+                            <dd class="col-sm-8">
+                                {% if alert.status == 'active' %}
+                                <span class="badge bg-warning">活跃</span>
+                                {% else %}
+                                <span class="badge bg-success">已处理</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- 挂科详情 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5>挂科科目详情</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                {% for course in alert.parsed_courses %}
+                                    <span class="badge bg-danger me-1 mb-1">{{ course }}</span>
+                                {% endfor %}
+                                <div class="row">
+                                    {% for course in failed_courses %}
+                                    <div class="col-md-3 mb-2">
+                                        <span class="badge bg-danger p-2 w-100">{{ course }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 预警原因分析 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5>预警原因分析</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <p>{{ alert.reason }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 状态更新 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">预警状态管理</h6>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ url_for('counselor.update_alert_status', alert_id=alert.id) }}">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <select class="form-select" name="status">
+                                                <option value="active" {% if alert.status == 'active' %}selected{% endif %}>活跃</option>
+                                                <option value="resolved" {% if alert.status == 'resolved' %}selected{% endif %}>已处理</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button type="submit" class="btn btn-primary w-100">更新状态</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 辅导记录 -->
+                <div class="row">
+                    <div class="col-12">
+                        <h5>辅导记录</h5>
+
+                        <!-- 添加辅导记录表单 -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0">添加辅导记录</h6>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="{{ url_for('counselor.add_counseling_record', alert_id=alert.id) }}">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label for="counseling_time" class="form-label">辅导时间</label>
+                                            <input type="datetime-local" class="form-control" id="counseling_time"
+                                                   name="counseling_time" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="content" class="form-label">辅导内容</label>
+                                            <textarea class="form-control" id="content" name="content"
+                                                      rows="1" placeholder="请输入辅导内容" required></textarea>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="plan" class="form-label">后续计划</label>
+                                            <textarea class="form-control" id="plan" name="plan"
+                                                      rows="1" placeholder="请输入后续辅导计划"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <button type="submit" class="btn btn-success">添加记录</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- 辅导记录列表 -->
+                        {% if counseling_records %}
+                        <div class="card">
+                            <div class="card-body">
+                                {% for record in counseling_records %}
+                                <div class="border-bottom pb-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0">辅导时间: {{ record.counseling_time.strftime('%Y年%m月%d日 %H:%M') }}</h6>
+                                        <small class="text-muted">记录时间: {{ record.created_at.strftime('%m/%d %H:%M') }}</small>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>辅导内容:</strong>
+                                        <p class="mb-1">{{ record.content }}</p>
+                                    </div>
+                                    {% if record.plan %}
+                                    <div>
+                                        <strong>后续计划:</strong>
+                                        <p class="mb-0">{{ record.plan }}</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <div class="text-muted mb-3">
+                                <i class="fas fa-clipboard-list fa-2x"></i>
+                            </div>
+                            <p class="text-muted">暂无辅导记录</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 设置辅导时间默认为当前时间
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('counseling_time').value = now.toISOString().slice(0, 16);
+});
+</script>
+{% endblock %}

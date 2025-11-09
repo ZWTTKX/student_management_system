@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}资料管理 - 学工管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">课程资料管理 - {{ course.course_name }}</h4>
+                <a href="{{ url_for('teacher.course_manage') }}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> 返回课程
+                </a>
+            </div>
+            <div class="card-body">
+                <!-- 上传资料表单 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">上传新资料</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('teacher.material_upload', course_id=course.id) }}"
+                              enctype="multipart/form-data">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="file" class="form-label">选择文件 <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" id="file" name="file" required>
+                                    <div class="form-text">
+                                        支持格式: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT, 图片等
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="category" class="form-label">资料分类</label>
+                                    <select class="form-select" id="category" name="category">
+                                        <option value="课件">课件</option>
+                                        <option value="作业">作业</option>
+                                        <option value="参考资料">参考资料</option>
+                                        <option value="其他">其他</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="description" class="form-label">资料描述</label>
+                                    <input type="text" class="form-control" id="description" name="description"
+                                           placeholder="请输入资料描述">
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100">上传</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 资料列表 -->
+                <h5>已上传资料</h5>
+                {% if materials %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>文件名称</th>
+                                <th>分类</th>
+                                <th>文件大小</th>
+                                <th>查看次数</th>
+                                <th>下载次数</th>
+                                <th>上传时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for material in materials %}
+                            <tr>
+                                <td>
+                                    <strong>{{ material.file_name }}</strong>
+                                    {% if material.description %}
+                                    <br>
+                                    <small class="text-muted">{{ material.description }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge
+                                        {% if material.category == '课件' %}bg-primary
+                                        {% elif material.category == '作业' %}bg-warning
+                                        {% elif material.category == '参考资料' %}bg-info
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ material.category }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if material.file_size %}
+                                        {{ (material.file_size / 1024 / 1024)|round(2) }} MB
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ material.view_count }}</td>
+                                <td>{{ material.download_count }}</td>
+                                <td>{{ material.created_at.strftime('%m/%d %H:%M') }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ url_for('teacher.material_download', material_id=material.id) }}"
+                                           class="btn btn-outline-primary" title="下载">
+                                            <i class="fas fa-download"></i>下载
+                                        </a>
+                                        <a href="{{ url_for('teacher.material_delete', material_id=material.id) }}"
+                                           class="btn btn-outline-danger" title="删除"
+                                           onclick="return confirm('确定要删除这个资料吗？此操作不可恢复。')">
+                                            <i class="fas fa-trash"></i>删除
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <div class="text-muted mb-3">
+                        <i class="fas fa-folder-open fa-3x"></i>
+                    </div>
+                    <h5>暂无资料</h5>
+                    <p class="text-muted">您还没有上传任何课程资料</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 侧边栏 -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">功能菜单</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% if role == 'student' %}
+                        <a href="{{ url_for('student.schedule') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-calendar-alt me-2"></i>课表查询
+                        </a>
+                        <a href="{{ url_for('student.exam_schedule') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-file-alt me-2"></i>考试安排
+                        </a>
+                        <a href="{{ url_for('student.leave_apply') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-user-clock me-2"></i>请假申请
+                        </a>
+                        <a href="{{ url_for('student.leave_records') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-history me-2"></i>请假记录
+                        </a>
+                        <a href="{{ url_for('classroom.booking') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-door-open me-2"></i>教室借用
+                        </a>
+                        <a href="{{ url_for('classroom.booking_records') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-clipboard-list me-2"></i>借用记录
+                        </a>
+                    {% elif role == 'teacher' %}
+                        <a href="{{ url_for('teacher.course_manage') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-book me-2"></i>课程管理
+                        </a>
+                        <a href="{{ url_for('teacher.grade_manage') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-chart-bar me-2"></i>成绩管理
+                        </a>
+                    {% elif role == 'counselor' %}
+                        <a href="#" class="list-group-item list-group-item-action">学业预警</a>
+                        <a href="#" class="list-group-item list-group-item-action">辅导记录</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ title }}</h4>
+                <span class="badge bg-secondary">{{ user.role }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12">
+                        <h5>欢迎使用学工管理系统</h5>
+                        <p class="text-muted">请从左侧菜单选择您需要的功能。</p>
+
+                        <!-- 根据角色显示不同的欢迎信息 -->
+                        {% if role == 'student' %}
+                        <div class="alert alert-info">
+                            <strong>学生功能提示：</strong> 您可以查询课表、考试安排，提交请假申请，借用教室等。
+                        </div>
+
+                        <!-- 学生快捷功能卡片 -->
+                        <div class="row mt-4">
+                            <div class="col-md-4 mb-3">
+                                <div class="card text-center h-100">
+                                    <div class="card-body">
+                                        <i class="fas fa-calendar-alt fa-2x text-primary mb-3"></i>
+                                        <h6>课表查询</h6>
+                                        <p class="text-muted small">查看个人课程安排</p>
+                                        <a href="{{ url_for('student.schedule') }}" class="btn btn-outline-primary btn-sm">进入</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card text-center h-100">
+                                    <div class="card-body">
+                                        <i class="fas fa-door-open fa-2x text-success mb-3"></i>
+                                        <h6>教室借用</h6>
+                                        <p class="text-muted small">申请使用教室</p>
+                                        <a href="{{ url_for('classroom.booking') }}" class="btn btn-outline-success btn-sm">进入</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card text-center h-100">
+                                    <div class="card-body">
+                                        <i class="fas fa-user-clock fa-2x text-warning mb-3"></i>
+                                        <h6>请假申请</h6>
+                                        <p class="text-muted small">提交请假申请</p>
+                                        <a href="{{ url_for('student.leave_apply') }}" class="btn btn-outline-warning btn-sm">进入</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% elif role == 'teacher' %}
+                        <div class="alert alert-success">
+                            <strong>教师功能提示：</strong> 您可以发布课程公告、管理课程资料、录入学生成绩等。
+                        </div>
+
+                        <!-- 教师快捷功能卡片 -->
+                        <div class="row mt-4">
+                            <div class="col-md-6 mb-3">
+                                <div class="card text-center h-100">
+                                    <div class="card-body">
+                                        <i class="fas fa-book fa-2x text-primary mb-3"></i>
+                                        <h6>课程管理</h6>
+                                        <p class="text-muted small">管理您的课程和发布公告</p>
+                                        <a href="{{ url_for('teacher.course_manage') }}" class="btn btn-outline-primary btn-sm">进入</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card text-center h-100">
+                                    <div class="card-body">
+                                        <i class="fas fa-chart-bar fa-2x text-success mb-3"></i>
+                                        <h6>成绩管理</h6>
+                                        <p class="text-muted small">录入和管理学生成绩</p>
+                                        <a href="{{ url_for('teacher.grade_manage') }}" class="btn btn-outline-success btn-sm">进入</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% elif role == 'counselor' %}
+                        <div class="alert alert-warning">
+                            <strong>辅导员功能提示：</strong> 您可以查看学生学业预警、管理辅导记录等。
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,822 @@
+<!-- templates/teacher/course_grades.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ course.course_name }} - 成绩管理{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ course.course_name }} - 成绩管理</h4>
+                <div>
+                    <a href="{{ url_for('teacher.grade_manage') }}" class="btn btn-light btn-sm me-2">
+                        <i class="fas fa-arrow-left"></i> 返回
+                    </a>
+                    <button class="btn btn-light btn-sm me-2" onclick="exportGrades()">
+                        <i class="fas fa-file-excel"></i> 导出Excel
+                    </button>
+                    <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#importModal">
+                        <i class="fas fa-file-import"></i> 导入Excel
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- 课程信息 -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <strong>课程代码:</strong> {{ course.course_code }}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>学分:</strong> {{ course.credit }}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>选课人数:</strong> {{ students|length }}
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-info btn-sm" onclick="showStatistics()">
+                            <i class="fas fa-chart-bar"></i> 成绩统计
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 批量操作工具栏 -->
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <div class="input-group">
+                            <select id="batchExamType" class="form-select">
+                                <option value="期末">期末</option>
+                                <option value="期中">期中</option>
+                                <option value="平时">平时</option>
+                                <option value="实验">实验</option>
+                            </select>
+                            <input type="date" id="batchExamDate" class="form-control">
+                            <button class="btn btn-primary" onclick="batchUpdateGrades()">
+                                <i class="fas fa-save"></i> 批量保存
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <!-- 新增：保存所有成绩按钮 -->
+                        <button class="btn btn-success" id="saveAllGradesBtn" onclick="saveAllGrades()">
+                            <i class="fas fa-save"></i> 保存所有成绩
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 成绩表格 -->
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>学号</th>
+                                <th>姓名</th>
+                                <th>班级</th>
+                                <th>成绩</th>
+                                <th>绩点</th>
+                                <th>等级</th>
+                                <th>考试类型</th>
+                                <th>考试日期</th>
+                                <th>评语</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            {% set grade = grade_dict.get(student.student_id) %}
+                            <tr class="student-grade">
+                                <td>{{ student.student.username }}</td>
+                                <td>{{ student.student.real_name }}</td>
+                                <td>{{ student.student.class_info.class_name if student.student.class_info else '' }}</td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm score-input"
+                                           value="{{ grade.score if grade and grade.score is not none else '' }}"
+                                           min="0" max="100" step="0.1"
+                                           data-student-id="{{ student.student_id }}"
+                                           placeholder="输入成绩">
+                                </td>
+                                <td class="grade-point">{{ grade.grade_point if grade else '' }}</td>
+                                <td class="grade-level">{{ grade.grade_level if grade else '' }}</td>
+                                <td>
+                                    <select class="form-select form-select-sm exam-type" data-student-id="{{ student.student_id }}">
+                                        <option value="期末" {% if grade and grade.exam_type == '期末' %}selected{% endif %}>期末</option>
+                                        <option value="期中" {% if grade and grade.exam_type == '期中' %}selected{% endif %}>期中</option>
+                                        <option value="平时" {% if grade and grade.exam_type == '平时' %}selected{% endif %}>平时</option>
+                                        <option value="实验" {% if grade and grade.exam_type == '实验' %}selected{% endif %}>实验</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="date" class="form-control form-control-sm exam-date"
+                                           value="{{ grade.exam_date.strftime('%Y-%m-%d') if grade and grade.exam_date else '' }}"
+                                           data-student-id="{{ student.student_id }}">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm comments"
+                                           value="{{ grade.comments if grade else '' }}"
+                                           data-student-id="{{ student.student_id }}" placeholder="评语">
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm" onclick="saveGrade({{ student.student_id }})">
+                                        <i class="fas fa-save"></i> 保存
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导入Modal -->
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">从Excel导入成绩</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="importForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">选择Excel文件</label>
+                        <input type="file" class="form-control" name="file" accept=".xlsx,.xls" required>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>模板说明：</strong><br>
+                        Excel文件必须包含"学号"和"成绩"列<br>
+                        下载 <a href="#" onclick="downloadTemplate()">导入模板</a>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="importGrades()">导入</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 统计Modal -->
+<div class="modal fade" id="statisticsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">成绩统计</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="statisticsContent">
+                <!-- 统计内容将通过JavaScript动态加载 -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 新增：保存所有成绩函数
+function saveAllGrades() {
+    const gradeData = [];
+
+    // 收集所有成绩数据
+    document.querySelectorAll('.student-grade').forEach(row => {
+        const studentId = row.querySelector('.score-input').getAttribute('data-student-id');
+        const score = row.querySelector('.score-input').value;
+        const examType = row.querySelector('.exam-type').value;
+        const examDate = row.querySelector('.exam-date').value;
+        const comments = row.querySelector('.comments').value;
+
+        // 只有当成绩不为空时才保存
+        if (score !== '') {
+            gradeData.push({
+                student_id: parseInt(studentId),
+                score: parseFloat(score),
+                exam_type: examType,
+                exam_date: examDate,
+                comments: comments
+            });
+        }
+    });
+
+    if (gradeData.length === 0) {
+        alert('请至少输入一个成绩');
+        return;
+    }
+
+    // 显示加载状态
+    const saveBtn = document.querySelector('#saveAllGradesBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+    saveBtn.disabled = true;
+
+    // 发送保存请求到新的保存路由
+    fetch("{{ url_for('teacher.save_grades', course_id=course.id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(gradeData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 保存成功，显示成功消息并重定向
+            alert('成绩保存成功！');
+            // 重定向回成绩管理页面并显示成功消息
+            window.location.href = "{{ url_for('teacher.grade_manage') }}?saved=true";
+        } else {
+            alert('保存失败: ' + data.message);
+            // 恢复按钮状态
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('保存失败，请重试');
+        // 恢复按钮状态
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// 修改单个保存函数
+function saveGrade(studentId) {
+    const scoreInput = document.querySelector(`.score-input[data-student-id="${studentId}"]`);
+    const examTypeSelect = document.querySelector(`.exam-type[data-student-id="${studentId}"]`);
+    const examDateInput = document.querySelector(`.exam-date[data-student-id="${studentId}"]`);
+    const commentsInput = document.querySelector(`.comments[data-student-id="${studentId}"]`);
+    const saveBtn = event.target;
+
+    // 创建包含单个学生成绩的数组
+    const gradeData = [{
+        student_id: parseInt(studentId),
+        score: scoreInput.value ? parseFloat(scoreInput.value) : null,
+        exam_type: examTypeSelect.value,
+        exam_date: examDateInput.value,
+        comments: commentsInput.value
+    }];
+
+    // 显示加载状态
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中';
+    saveBtn.disabled = true;
+
+    // 使用新的保存路由
+    fetch("{{ url_for('teacher.save_grades', course_id=course.id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(gradeData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 更新绩点和等级显示
+            const row = scoreInput.closest('tr');
+            const score = parseFloat(scoreInput.value);
+            if (!isNaN(score)) {
+                const gradePoint = calculateGradePoint(score);
+                const gradeLevel = calculateGradeLevel(score);
+                row.querySelector('.grade-point').textContent = gradePoint.toFixed(1);
+                row.querySelector('.grade-level').textContent = gradeLevel;
+            } else {
+                // 如果成绩为空，清空显示
+                row.querySelector('.grade-point').textContent = '';
+                row.querySelector('.grade-level').textContent = '';
+            }
+
+            // 重要：锁定该行所有输入框，并改变按钮为修改按钮
+            lockStudentRow(studentId, saveBtn);
+
+            // 显示成功提示
+            showSuccessMessage('成绩保存成功！信息已锁定');
+        } else {
+            alert('保存失败: ' + data.message);
+            // 恢复按钮状态
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        alert('保存失败: ' + error);
+        // 恢复按钮状态
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// 修复：锁定学生行的所有输入框
+function lockStudentRow(studentId, button) {
+    const row = document.querySelector(`.score-input[data-student-id="${studentId}"]`).closest('tr');
+
+    // 锁定所有输入框
+    const scoreInput = row.querySelector('.score-input');
+    const examTypeSelect = row.querySelector('.exam-type');
+    const examDateInput = row.querySelector('.exam-date');
+    const commentsInput = row.querySelector('.comments');
+
+    // 设置为只读
+    scoreInput.readOnly = true;
+    examTypeSelect.disabled = true;
+    examDateInput.disabled = true;
+    commentsInput.readOnly = true;
+
+    // 添加视觉提示 - 灰色背景
+    row.classList.add('table-secondary');
+
+    // 改变按钮为红色修改按钮
+    changeButtonToModified(button, studentId);
+}
+
+// 修复：解锁学生行的所有输入框
+function unlockStudentRow(studentId, button) {
+    const row = document.querySelector(`.score-input[data-student-id="${studentId}"]`).closest('tr');
+
+    // 解锁所有输入框
+    const scoreInput = row.querySelector('.score-input');
+    const examTypeSelect = row.querySelector('.exam-type');
+    const examDateInput = row.querySelector('.exam-date');
+    const commentsInput = row.querySelector('.comments');
+
+    // 取消只读
+    scoreInput.readOnly = false;
+    examTypeSelect.disabled = false;
+    examDateInput.disabled = false;
+    commentsInput.readOnly = false;
+
+    // 移除视觉提示
+    row.classList.remove('table-secondary');
+
+    // 改变按钮为蓝色保存按钮
+    changeButtonToSave(button, studentId);
+}
+
+// 修复：将按钮改为红色修改按钮
+function changeButtonToModified(button, studentId) {
+    // 改变按钮颜色为红色
+    button.classList.remove('btn-primary');
+    button.classList.add('btn-danger');
+
+    // 改变图标和文字
+    button.innerHTML = '<i class="fas fa-edit"></i> 修改';
+
+    // 启用按钮
+    button.disabled = false;
+
+    // 移除之前的事件监听器，添加新的事件监听器
+    button.onclick = function(event) {
+        unlockStudentRow(studentId, button);
+        showSuccessMessage('已解锁，可以修改成绩信息');
+    };
+}
+
+// 修复：将按钮恢复为保存按钮
+function changeButtonToSave(button, studentId) {
+    // 恢复按钮颜色为蓝色
+    button.classList.remove('btn-danger');
+    button.classList.add('btn-primary');
+
+    // 恢复图标和文字
+    button.innerHTML = '<i class="fas fa-save"></i> 保存';
+
+    // 启用按钮
+    button.disabled = false;
+
+    // 恢复点击事件
+    button.onclick = function(event) {
+        saveGrade(studentId);
+    };
+}
+
+// 修复：页面加载时，初始化已保存成绩的状态
+document.addEventListener('DOMContentLoaded', function() {
+    // 自动计算绩点和等级
+    const scoreInputs = document.querySelectorAll('.score-input');
+    scoreInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const score = parseFloat(this.value);
+            const row = this.closest('tr');
+            if (!isNaN(score)) {
+                const gradePoint = calculateGradePoint(score);
+                const gradeLevel = calculateGradeLevel(score);
+                row.querySelector('.grade-point').textContent = gradePoint.toFixed(1);
+                row.querySelector('.grade-level').textContent = gradeLevel;
+            } else {
+                row.querySelector('.grade-point').textContent = '';
+                row.querySelector('.grade-level').textContent = '';
+            }
+        });
+    });
+
+    // 初始化：检查哪些成绩已经存在，设置对应的锁定状态
+    initializeSavedGradesState();
+});
+
+// 修复：初始化已保存成绩的状态
+function initializeSavedGradesState() {
+    // 遍历所有学生行，检查是否有成绩数据
+    document.querySelectorAll('.student-grade').forEach(row => {
+        const scoreInput = row.querySelector('.score-input');
+        const studentId = scoreInput.getAttribute('data-student-id');
+        const saveBtn = row.querySelector('button');
+
+        // 如果成绩输入框有值，说明已经保存过，锁定该行
+        if (scoreInput.value && scoreInput.value.trim() !== '') {
+            // 确保按钮是启用状态
+            saveBtn.disabled = false;
+            lockStudentRow(studentId, saveBtn);
+        } else {
+            // 确保新行的按钮是启用状态
+            saveBtn.disabled = false;
+        }
+    });
+}
+
+// 修改批量保存函数，保存后锁定所有已保存的行
+function batchUpdateGrades() {
+    const examType = document.getElementById('batchExamType').value;
+    const examDate = document.getElementById('batchExamDate').value;
+
+    const gradeData = [];
+    const scoreInputs = document.querySelectorAll('.score-input');
+
+    scoreInputs.forEach(input => {
+        if (input.value) {
+            gradeData.push({
+                student_id: parseInt(input.dataset.studentId),
+                score: parseFloat(input.value),
+                exam_type: examType,
+                exam_date: examDate,
+                comments: ''
+            });
+        }
+    });
+
+    if (gradeData.length === 0) {
+        alert('请至少输入一个成绩');
+        return;
+    }
+
+    // 显示加载状态
+    const batchBtn = event.target;
+    const originalText = batchBtn.innerHTML;
+    batchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+    batchBtn.disabled = true;
+
+    // 使用新的保存路由
+    fetch("{{ url_for('teacher.save_grades', course_id=course.id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(gradeData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 锁定所有已保存的行
+            scoreInputs.forEach(input => {
+                if (input.value) {
+                    const studentId = input.getAttribute('data-student-id');
+                    const saveBtn = input.closest('tr').querySelector('button');
+                    lockStudentRow(studentId, saveBtn);
+                }
+            });
+
+            alert('批量保存成功！所有信息已锁定');
+        } else {
+            alert('保存失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('保存失败: ' + error);
+    })
+    .finally(() => {
+        // 恢复按钮状态
+        batchBtn.innerHTML = originalText;
+        batchBtn.disabled = false;
+    });
+}
+
+// 修改保存所有成绩函数
+function saveAllGrades() {
+    const gradeData = [];
+
+    // 收集所有成绩数据
+    document.querySelectorAll('.student-grade').forEach(row => {
+        const studentId = row.querySelector('.score-input').getAttribute('data-student-id');
+        const score = row.querySelector('.score-input').value;
+        const examType = row.querySelector('.exam-type').value;
+        const examDate = row.querySelector('.exam-date').value;
+        const comments = row.querySelector('.comments').value;
+
+        // 只有当成绩不为空时才保存
+        if (score !== '') {
+            gradeData.push({
+                student_id: parseInt(studentId),
+                score: parseFloat(score),
+                exam_type: examType,
+                exam_date: examDate,
+                comments: comments
+            });
+        }
+    });
+
+    if (gradeData.length === 0) {
+        alert('请至少输入一个成绩');
+        return;
+    }
+
+    // 显示加载状态
+    const saveBtn = document.querySelector('#saveAllGradesBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+    saveBtn.disabled = true;
+
+    // 发送保存请求到新的保存路由
+    fetch("{{ url_for('teacher.save_grades', course_id=course.id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(gradeData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 锁定所有已保存的行
+            document.querySelectorAll('.student-grade').forEach(row => {
+                const scoreInput = row.querySelector('.score-input');
+                if (scoreInput.value && scoreInput.value.trim() !== '') {
+                    const studentId = scoreInput.getAttribute('data-student-id');
+                    const rowSaveBtn = row.querySelector('button');
+                    lockStudentRow(studentId, rowSaveBtn);
+                }
+            });
+
+            alert('成绩保存成功！所有信息已锁定');
+        } else {
+            alert('保存失败: ' + data.message);
+            // 恢复按钮状态
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('保存失败，请重试');
+        // 恢复按钮状态
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// 原有的辅助函数保持不变
+function calculateGradePoint(score) {
+    if (score >= 90) return 4.0;
+    if (score >= 80) return 3.0;
+    if (score >= 70) return 2.0;
+    if (score >= 60) return 1.0;
+    return 0.0;
+}
+
+function calculateGradeLevel(score) {
+    if (score >= 90) return 'A';
+    if (score >= 80) return 'B';
+    if (score >= 70) return 'C';
+    if (score >= 60) return 'D';
+    return 'F';
+}
+
+function showSuccessMessage(message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fas fa-check-circle"></i> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 3000);
+}
+
+// 修改保存所有成绩函数
+function saveAllGrades() {
+    const gradeData = [];
+
+    // 收集所有成绩数据
+    document.querySelectorAll('.student-grade').forEach(row => {
+        const studentId = row.querySelector('.score-input').getAttribute('data-student-id');
+        const score = row.querySelector('.score-input').value;
+        const examType = row.querySelector('.exam-type').value;
+        const examDate = row.querySelector('.exam-date').value;
+        const comments = row.querySelector('.comments').value;
+
+        // 只有当成绩不为空时才保存
+        if (score !== '') {
+            gradeData.push({
+                student_id: parseInt(studentId),
+                score: parseFloat(score),
+                exam_type: examType,
+                exam_date: examDate,
+                comments: comments
+            });
+        }
+    });
+
+    if (gradeData.length === 0) {
+        alert('请至少输入一个成绩');
+        return;
+    }
+
+    // 显示加载状态
+    const saveBtn = document.querySelector('#saveAllGradesBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+    saveBtn.disabled = true;
+
+    // 发送保存请求到新的保存路由
+    fetch("{{ url_for('teacher.save_grades', course_id=course.id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(gradeData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 保存成功，显示成功消息并重定向
+            alert('成绩保存成功！');
+            // 重定向回成绩管理页面并显示成功消息
+            window.location.href = "{{ url_for('teacher.grade_manage') }}?saved=true";
+        } else {
+            alert('保存失败: ' + data.message);
+            // 恢复按钮状态
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('保存失败，请重试');
+        // 恢复按钮状态
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// 修改批量保存函数，也调用新的保存路由
+function batchUpdateGrades() {
+    const examType = document.getElementById('batchExamType').value;
+    const examDate = document.getElementById('batchExamDate').value;
+
+    const gradeData = [];
+    const scoreInputs = document.querySelectorAll('.score-input');
+
+    scoreInputs.forEach(input => {
+        if (input.value) {
+            gradeData.push({
+                student_id: parseInt(input.dataset.studentId),
+                score: parseFloat(input.value),
+                exam_type: examType,
+                exam_date: examDate,
+                comments: ''
+            });
+        }
+    });
+
+    if (gradeData.length === 0) {
+        alert('请至少输入一个成绩');
+        return;
+    }
+
+    // 显示加载状态
+    const batchBtn = event.target;
+    const originalText = batchBtn.innerHTML;
+    batchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+    batchBtn.disabled = true;
+
+    // 使用新的保存路由
+    fetch("{{ url_for('teacher.save_grades', course_id=course.id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(gradeData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('批量保存成功！');
+            // 重定向回成绩管理页面
+            window.location.href = "{{ url_for('teacher.grade_manage') }}?saved=true";
+        } else {
+            alert('保存失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('保存失败: ' + error);
+    })
+    .finally(() => {
+        // 恢复按钮状态
+        batchBtn.innerHTML = originalText;
+        batchBtn.disabled = false;
+    });
+}
+
+function exportGrades() {
+    window.location.href = `{{ url_for('teacher.export_grades', course_id=course.id) }}`;
+}
+
+function importGrades() {
+    const form = document.getElementById('importForm');
+    const formData = new FormData(form);
+
+    fetch(`{{ url_for('teacher.import_grades', course_id=course.id) }}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        }
+    });
+}
+
+function downloadTemplate() {
+    // 这里可以提供一个模板下载链接
+    alert('模板下载功能开发中');
+}
+
+function showStatistics() {
+    fetch(`{{ url_for('teacher.grade_statistics', course_id=course.id) }}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        const content = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>基本统计</h6>
+                    <ul>
+                        <li>总人数: ${data.total_students}</li>
+                        <li>平均分: ${data.average_score}</li>
+                        <li>最高分: ${data.max_score}</li>
+                        <li>最低分: ${data.min_score}</li>
+                        <li>及格人数: ${data.pass_count}</li>
+                        <li>不及格人数: ${data.fail_count}</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>分数段分布</h6>
+                    <ul>
+                        <li>90-100分: ${data.score_distribution['90-100']}人</li>
+                        <li>80-89分: ${data.score_distribution['80-89']}人</li>
+                        <li>70-79分: ${data.score_distribution['70-79']}人</li>
+                        <li>60-69分: ${data.score_distribution['60-69']}人</li>
+                        <li>0-59分: ${data.score_distribution['0-59']}人</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('statisticsContent').innerHTML = content;
+        new bootstrap.Modal(document.getElementById('statisticsModal')).show();
+    });
+}
+
+// 自动计算绩点和等级
+document.addEventListener('DOMContentLoaded', function() {
+    const scoreInputs = document.querySelectorAll('.score-input');
+    scoreInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const score = parseFloat(this.value);
+            const row = this.closest('tr');
+            if (!isNaN(score)) {
+                const gradePoint = calculateGradePoint(score);
+                const gradeLevel = calculateGradeLevel(score);
+                row.querySelector('.grade-point').textContent = gradePoint.toFixed(1);
+                row.querySelector('.grade-level').textContent = gradeLevel;
+            } else {
+                row.querySelector('.grade-point').textContent = '';
+                row.querySelector('.grade-level').textContent = '';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}教室借用 - 学工管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">教室借用</h4>
+            </div>
+            <div class="card-body">
+                <form id="bookingForm">
+                    <!-- 借用时间 -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="booking_date" class="form-label">借用日期 <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="booking_date" name="booking_date" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="start_time" class="form-label">开始时间 <span class="text-danger">*</span></label>
+                            <input type="time" class="form-control" id="start_time" name="start_time" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="end_time" class="form-label">结束时间 <span class="text-danger">*</span></label>
+                            <input type="time" class="form-control" id="end_time" name="end_time" required>
+                        </div>
+                    </div>
+
+                    <!-- 查询可用教室 -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <button type="button" id="searchClassrooms" class="btn btn-primary">
+                                <i class="fas fa-search"></i> 查询可用教室
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 可用教室列表 -->
+                    <div id="classroomsList" class="mb-4" style="display: none;">
+                        <h5>可用教室列表</h5>
+                        <div id="classroomsContainer" class="row"></div>
+                    </div>
+
+                    <!-- 借用详情 -->
+                    <div id="bookingDetails" style="display: none;">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="purpose" class="form-label">借用事由 <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="purpose" name="purpose" rows="3"
+                                          placeholder="请详细说明借用事由..." required></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="participants" class="form-label">参与人数 <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="participants" name="participants"
+                                       min="1" required>
+                                <div class="form-text" id="capacityInfo"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">提交借用申请</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 借用说明 -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6>借用说明：</h6>
+                <ul class="small text-muted">
+                    <li>请提前至少1天申请教室借用</li>
+                    <li>借用时间以1小时为单位</li>
+                    <li>参与人数不能超过教室容量</li>
+                    <li>申请提交后需等待管理员审核</li>
+                    <li>审核通过后可下载借用凭证</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const bookingForm = document.getElementById('bookingForm');
+    const searchBtn = document.getElementById('searchClassrooms');
+    const classroomsList = document.getElementById('classroomsList');
+    const bookingDetails = document.getElementById('bookingDetails');
+    let selectedClassroom = null;
+
+    // 设置最小日期为明天
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('booking_date').min = tomorrow.toISOString().split('T')[0];
+
+    // 查询可用教室
+    searchBtn.addEventListener('click', function() {
+        const bookingDate = document.getElementById('booking_date').value;
+        const startTime = document.getElementById('start_time').value;
+        const endTime = document.getElementById('end_time').value;
+
+        if (!bookingDate || !startTime || !endTime) {
+            alert('请填写完整的借用时间信息');
+            return;
+        }
+
+        // 发送查询请求
+        fetch('{{ url_for("classroom.available_classrooms") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                booking_date: bookingDate,
+                start_time: startTime,
+                end_time: endTime
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            displayClassrooms(data.classrooms);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('查询失败，请重试');
+        });
+    });
+
+    // 显示可用教室
+    function displayClassrooms(classrooms) {
+        const container = document.getElementById('classroomsContainer');
+        container.innerHTML = '';
+
+        if (classrooms.length === 0) {
+            container.innerHTML = '<div class="col-12"><p class="text-muted">该时间段没有可用教室</p></div>';
+        } else {
+            classrooms.forEach(classroom => {
+                const classroomCard = `
+                    <div class="col-md-6 mb-3">
+                        <div class="card classroom-card" data-id="${classroom.id}">
+                            <div class="card-body">
+                                <h6 class="card-title">${classroom.room_number}</h6>
+                                <p class="card-text mb-1">
+                                    <small class="text-muted">教学楼: ${classroom.building}</small>
+                                </p>
+                                <p class="card-text mb-1">
+                                    <small class="text-muted">容量: ${classroom.capacity}人</small>
+                                </p>
+                                <p class="card-text">
+                                    <small class="text-muted">设备: ${classroom.equipment || '无'}</small>
+                                </p>
+                                <button type="button" class="btn btn-outline-primary btn-sm select-classroom">
+                                    选择此教室
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += classroomCard;
+            });
+
+            // 添加选择教室事件
+            document.querySelectorAll('.select-classroom').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const card = this.closest('.classroom-card');
+                    const classroomId = card.dataset.id;
+                    const classroom = classrooms.find(c => c.id == classroomId);
+
+                    selectClassroom(classroom);
+                });
+            });
+        }
+
+        classroomsList.style.display = 'block';
+    }
+
+    // 选择教室
+    function selectClassroom(classroom) {
+        selectedClassroom = classroom;
+
+        // 更新UI
+        document.querySelectorAll('.classroom-card').forEach(card => {
+            card.classList.remove('border-primary');
+        });
+        event.target.closest('.classroom-card').classList.add('border-primary');
+
+        // 显示借用详情
+        document.getElementById('capacityInfo').textContent = `教室容量: ${classroom.capacity}人`;
+        bookingDetails.style.display = 'block';
+
+        // 滚动到详情区域
+        bookingDetails.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // 提交借用申请
+    bookingForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        if (!selectedClassroom) {
+            alert('请选择教室');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('classroom_id', selectedClassroom.id);
+        formData.append('booking_date', document.getElementById('booking_date').value);
+        formData.append('start_time', document.getElementById('start_time').value);
+        formData.append('end_time', document.getElementById('end_time').value);
+        formData.append('purpose', document.getElementById('purpose').value);
+        formData.append('participants', document.getElementById('participants').value);
+
+        fetch('{{ url_for("classroom.submit_booking") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('提交失败，请重试');
+        });
+    });
+});
+</script>
+
+<style>
+.classroom-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.classroom-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.classroom-card.border-primary {
+    border: 2px solid #0d6efd !important;
+}
+</style>
+{% endblock %}

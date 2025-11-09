@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}发布公告 - 学工管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">发布课程公告 - {{ course.course_name }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <!-- 公告标题 -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label">公告标题 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title"
+                               placeholder="请输入公告标题" required>
+                    </div>
+
+                    <!-- 公告内容 -->
+                    <div class="mb-3">
+                        <label for="content" class="form-label">公告内容 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="content" name="content" rows="10"
+                                  placeholder="请输入公告内容（支持富文本格式）" required></textarea>
+                        <div class="form-text">
+                            提示：您可以使用简单的HTML标签来格式化文本，如 &lt;strong&gt;粗体&lt;/strong&gt;, &lt;em&gt;斜体&lt;/em&gt;, &lt;u&gt;下划线&lt;/u&gt; 等
+                        </div>
+                    </div>
+
+                    <!-- 置顶设置 -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_pinned" name="is_pinned">
+                                <label class="form-check-label" for="is_pinned">
+                                    置顶公告
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="pin_duration" class="form-label">置顶时长（天）</label>
+                            <select class="form-select" id="pin_duration" name="pin_duration">
+                                <option value="1">1天</option>
+                                <option value="2">2天</option>
+                                <option value="3" selected>3天</option>
+                                <option value="7">7天</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 表单操作 -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('teacher.course_manage') }}" class="btn btn-secondary me-md-2">
+                            返回课程列表
+                        </a>
+                        <button type="submit" class="btn btn-primary">发布公告</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 发布说明 -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6>发布说明：</h6>
+                <ul class="small text-muted">
+                    <li>公告发布后，系统会自动通知该课程的所有学生</li>
+                    <li>置顶公告会在指定天数内显示在公告列表顶部</li>
+                    <li>请确保公告内容准确无误</li>
+                    <li>公告发布后可以修改，但会显示修改记录</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

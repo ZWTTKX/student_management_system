@@ -1,0 +1,99 @@
+<!-- templates/student/my_courses.html -->
+{% extends "base.html" %}
+
+{% block title %}我的课程{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">我的课程</h4>
+                    <a href="{{ url_for('student.course_selection') }}" class="btn btn-light btn-sm">
+                        <i class="fas fa-plus"></i> 添加课程
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if selected_courses %}
+                    <div class="row">
+                        {% for selected in selected_courses %}
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">{{ selected.course.course_name }}</h5>
+                                    <small class="text-muted">{{ selected.course.course_code }}</small>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        <strong>授课教师:</strong> {{ selected.course.teacher.real_name }}<br>
+                                        <strong>学分:</strong> {{ selected.course.credit }}<br>
+                                        <strong>选课时间:</strong> {{ selected.selected_at.strftime('%Y-%m-%d') }}<br>
+                                        <strong>上课时间:</strong>
+                                        {% for schedule in selected.course.schedules %}
+                                            {{ ['周一','周二','周三','周四','周五','周六','周日'][schedule.day_of_week-1] }}
+                                            {{ schedule.start_time.strftime('%H:%M') }}-{{ schedule.end_time.strftime('%H:%M') }}<br>
+                                        {% endfor %}
+                                        <strong>上课地点:</strong>
+                                        {% for schedule in selected.course.schedules %}
+                                            {{ schedule.location }}{% if not loop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </p>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">选课于 {{ selected.selected_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                        <button class="btn btn-danger btn-sm"
+                                                onclick="dropCourse({{ selected.course.id }})"
+                                                title="退选课程">
+                                            <i class="fas fa-trash"></i> 退选
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">暂无课程</h5>
+                        <p class="text-muted">您还没有选择任何课程</p>
+                        <a href="{{ url_for('student.course_selection') }}" class="btn btn-primary">去选课</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript 退选功能 -->
+<script>
+function dropCourse(courseId) {
+    if (!confirm('确定要退选这门课程吗？')) {
+        return;
+    }
+
+    fetch(`/student/drop-course/${courseId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('退选成功！');
+            location.reload(); // 刷新页面
+        } else {
+            alert('退选失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('退选失败，请稍后重试');
+    });
+}
+</script>
+{% endblock %}
